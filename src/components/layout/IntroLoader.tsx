@@ -58,7 +58,7 @@ export function IntroLoader() {
     >
       <div className="flex flex-col items-center gap-4">
         <span className="rx-rise">
-          <LogoMark className="h-11 w-11" animated tone="dark" />
+          <LogoMark className="h-14 w-14" animated tone="dark" />
         </span>
         <span className="relative block h-px w-28 overflow-hidden bg-[#dde5ed]">
           <span

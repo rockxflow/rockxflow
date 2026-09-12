@@ -59,23 +59,41 @@ anchors all move together.
 
 - `services[]` — `slug` is the anchor (`/services#ai-agents`); never re-derive it from the title.
 - `pillars`, `solutions`, `industries`, `processSteps`, `principles`, `automationCategories`,
-  `signatureWorkflow`, `heroFlow`, `faqs`, `budgetBands`, `projectTypes`, `integrationTools`.
+  `signatureWorkflow`, `heroFlow`, `faqs`, `projectTypes`, `integrationTools`.
 
 ## Making the form deliver
 
 By default the deployment has no delivery channel, and the site says so honestly:
 
 ```
-POST /api/contact → 200 { ok: false, code: "not_configured",
-                           message: "The form's delivery channel is not configured…",
+POST /api/contact → 503 { ok: false, code: "not_configured",
+                           message: "This deployment has no delivery channel yet…",
+                           setup: { missing: ["CONTACT_WEBHOOK_URL", "RESEND_API_KEY", …] },
                            fallback: { email, whatsapp, subject } }
 ```
 
 The UI then shows a "not sent yet" panel with WhatsApp / mailto / copy-to-clipboard
-actions. Set one variable to make it live:
+actions, and `setup.missing` names the exact variable to set. Set one channel to make it live:
 
 - `CONTACT_WEBHOOK_URL` → any Make / Zapier / n8n / Slack / own-service sink, **or**
 - `RESEND_API_KEY` + `CONTACT_TO_EMAIL` + `CONTACT_FROM_EMAIL` → transactional email.
+
+Both are server-only (`process.env` inside the route handler); nothing is ever inlined into the
+client bundle, and `GET /api/contact` reports only whether each variable is *present*, never its value.
+The webhook body is the validated enquiry as JSON: `name, business, email, phone, topic, message,
+kind, submittedAt, page, source`. Add `CONTACT_WEBHOOK_TOKEN` to send `authorization: Bearer …` to a
+protected n8n/Make receiver. A 2xx from the sink counts as delivered — unless it answers with
+`{"ok": false}`, which is treated as a failure. Resend notes: a test API key only delivers to the
+address verified on your account and must send from `onboarding@resend.dev`; verify a domain for
+production, and keep `CONTACT_FROM_EMAIL` on that domain.
+
+Test the whole chain locally without touching a provider:
+
+```bash
+node tools/check-form.mjs                    # introspection + validation + honeypot + rate limit
+CONTACT_WEBHOOK_URL=http://127.0.0.1:8788/   # then submit; a local sink prints the JSON it received
+node tools/check-form.mjs --live             # includes one real delivery through that webhook
+```
 
 Request guards, in order: honeypot `_company` filled → silent `200 {ok:true,dropped:true}`;
 `_mountedAt` < 3 s → `429 too_fast`; > 6 submissions per IP per 10 min → `429`;
@@ -107,12 +125,18 @@ convert the woff2 in `public/fonts` to TTF once (`fontTools`) into `~/.fonts` an
 The OG headline, logo mark and colours are generated from the same tokens as the site — the
 SVG source lives inside that tool.
 
-**Logo:** the mark and the social glyphs are reconstructions of the described identity. The R is
-painted with a tone-aware gradient from the shared `<BrandDefs />` sprite in the root layout —
-silver on dark surfaces, graphite on `#F7F9FC`, so it never fades into a light navbar.
-When the real file arrives, drop it at `public/brand/rockxflow-logo.svg` and set
-`USE_CLIENT_ASSET = true` in `src/components/ui/Logo.tsx` — the wordmark and all favicons then
-follow it (rerun `build-brand-assets.mjs` for the PNGs).
+**Logo:** the official asset lives at `public/brand/rockxflow-logo.png` and is used verbatim — it is
+never redrawn, retypeset or cropped. `src/components/ui/Logo.tsx` is the only place that references it:
+
+- `LogoMark` — the square file inside a rounded `#010205` tile, for light surfaces (navbar, loader).
+  The file's own wordmark is ~5% of its height, so at 36px it would be unreadable; the agency name next
+  to the tile is set in the site typeface for legibility, not as a replacement of the artwork.
+- `LogoLockup` — the whole file at poster width, unframed, on dark surfaces (footer, `/404`) where its
+  background disappears and mark + wordmark + tagline all read as supplied.
+- `build-brand-assets.mjs` scales that same file (never crops) into `favicon-{16,32,180,192,512}.png`,
+  `apple-touch-icon.png`, `icon-512{,-maskable}.png` and the OG card badge, and JSON-LD points at it.
+
+`<BrandDefs />` + the vector `LogoMark` remain only as a fallback when `USE_CLIENT_ASSET = false`.
 
 ## QA
 

@@ -62,6 +62,13 @@ for (const route of pages) {
       escapingLinks: links
         .map((h) => (h ?? "").split("#")[0].split("?")[0])
         .filter((h) => h.startsWith("/") && !h.startsWith("/api/") && !h.startsWith(base)),
+      /* loaded assets must be requested under the base path too: a public/ URL that skips
+         the prefix works from a server that ignores the base and 404s on GitHub Pages */
+      escapingAssets: [...document.querySelectorAll("img,source,video,link,use")]
+        .map((el) => el.currentSrc || el.src || el.poster || el.href || "")
+        .filter((u) => u.startsWith(location.origin))
+        .map((u) => u.slice(location.origin.length).split("?")[0].split("#")[0])
+        .filter((u) => u.startsWith("/") && !u.startsWith(base)),
     };
   }, BASE);
   if (stats.h1 !== 1) problems.push(`${route}: ${stats.h1} h1 tags`);
@@ -70,6 +77,7 @@ for (const route of pages) {
   if (stats.overflow) problems.push(`${route}: horizontal overflow ${stats.overflow} at 1440`);
   if (stats.brokenImgs.length) problems.push(`${route}: broken images ${stats.brokenImgs.join(", ")}`);
   if (stats.escapingLinks.length) problems.push(`${route}: links leave the base path → ${stats.escapingLinks.join(", ")}`);
+  if (stats.escapingAssets.length) problems.push(`${route}: assets outside the base path → ${[...new Set(stats.escapingAssets)].join(", ")}`);
   report.push(`${route.padEnd(17)} h1 ${stats.h1Size ?? "-"} ${stats.family ?? "?"} · css ${stats.sheets} · ${stats.title}`);
   await page.close();
 }

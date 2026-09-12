@@ -220,8 +220,6 @@ export function Navbar() {
                 </div>
                 <p className="t-small mt-5 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="t-mono uppercase tracking-[0.12em] text-[#0757a8]">{site.tagline}</span>
-                  <span className="text-[#c3ccd6]">·</span>
-                  <span>{site.location}</span>
                 </p>
               </motion.div>
             </div>

@@ -29,7 +29,7 @@ export default function PrivacyPage() {
           id: "summary",
           h: "The short version",
           p: [
-            "When you contact us we receive exactly what you chose to type into the enquiry form: your name, business name, email, phone, the automation you are interested in, an optional budget band and your message.",
+            "When you contact us we receive exactly what you chose to type into the enquiry form: your name, business name, email, phone, the automation you are interested in and your message.",
             <>
               We use it for one purpose — to reply to you and, if we proceed, to scope and deliver the work. We do not sell it, we do not add you to marketing lists, and we do not send newsletters you did not request.
             </>,
@@ -123,9 +123,9 @@ export default function PrivacyPage() {
         },
         {
           id: "transfer",
-          h: "Locations",
+          h: "Where data is processed",
           p: [
-            `Rockxflow is based in ${site.location}, India. Enquiry data may be processed by providers whose servers sit outside India, which is why we limit what we collect and rely on their standard contractual and security terms.`,
+            "Rockxflow works remotely, and enquiry data may be processed by service providers whose servers sit in other countries. That is why we limit what we collect in the first place and rely on their standard contractual and security terms.",
           ],
         },
         {

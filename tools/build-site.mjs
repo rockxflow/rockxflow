@@ -78,14 +78,25 @@ try {
 }
 
 /**
- * basePath covers /_next/** only — the files in public/ (media, fonts, icons) are
- * emitted as root-absolute URLs and would miss the /<repo>/ prefix on a GitHub
- * project page. So the export gets one targeted rewrite pass here instead of a
- * base-path helper threaded through every component: same output, no app-build risk.
+ * basePath covers /_next/** only — every folder in public/ (media, fonts, icons, brand …)
+ * is emitted as a root-absolute URL and would miss the /<repo>/ prefix on a GitHub project
+ * page. So the export gets one targeted rewrite pass here instead of a base-path helper
+ * threaded through every component: same output, no app-build risk. The folder list is read
+ * from public/ itself, so a new asset folder can never be forgotten again, and the pass
+ * fails the build if any unprefixed reference survives.
  */
 async function prefixPublicUrls(dir, base) {
   let touched = 0;
   let hits = 0;
+  const kinds = (await readdir(path.join(ROOT, "public"), { withFileTypes: true }))
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort();
+  const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const alter = kinds.map(escRe).join("|");
+  const attrRe = new RegExp(`(["'(=])\\/(${alter})\\/`, "g");
+  const arrRe = new RegExp(`(,\\s*)\\/(${alter})\\/`, "g");
+  const strayRe = new RegExp(`(["'(=])\\/(${alter})\\/`, "g");
   const walkDir = async (d) => {
     for (const e of await readdir(d, { withFileTypes: true })) {
       const f = path.join(d, e.name);
@@ -96,11 +107,11 @@ async function prefixPublicUrls(dir, base) {
           // attributes, CSS url(), JSON strings and the escaped strings inside the
           // RSC payload, plus literals in the JS chunks (the hero <video> builds its
           // src at runtime, so those never appear as HTML attributes at all)
-          .replace(/(["'(=])\/(media|fonts|icons)\//g, (_m, q, kind) => {
+          .replace(attrRe, (_m, q, kind) => {
             hits++;
             return `${q}${base}/${kind}/`;
           })
-          .replace(/(,\s*)\/(media|fonts|icons)\//g, (_m, sep, kind) => {
+          .replace(arrRe, (_m, sep, kind) => {
             hits++;
             return `${sep}${base}/${kind}/`;
           });
@@ -108,6 +119,8 @@ async function prefixPublicUrls(dir, base) {
           await writeFile(f, out, "utf8");
           touched++;
         }
+        const stray = (await readFile(f, "utf8")).match(strayRe) ?? [];
+        if (stray.length) throw new Error(`unprefixed public asset URL left in ${f}: ${stray.slice(0, 3).join(" ")}`);
       }
     }
   };

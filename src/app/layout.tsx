@@ -36,11 +36,10 @@ export const metadata: Metadata = {
   category: "technology",
   icons: {
     icon: [
-      { url: "/icons/logo-mark.svg", type: "image/svg+xml" },
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/favicon-180.png", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: "/icons/logo-mark.svg",
+    shortcut: "/icons/favicon-32.png",
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.webmanifest",

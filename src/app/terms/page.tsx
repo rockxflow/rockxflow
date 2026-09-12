@@ -142,7 +142,7 @@ export default function TermsPage() {
           id: "law",
           h: "Governing law and disputes",
           p: [
-            `These terms are governed by the laws of India. The parties will first try to resolve a dispute in good faith through discussion between their nominated representatives; unresolved disputes are subject to the exclusive jurisdiction of the competent courts of ${site.location}.`,
+            "Until an engagement is agreed in writing these terms govern this website and the information on it. Where the parties do sign an agreement, that agreement states the governing law and the courts that will hear an unresolved dispute; until then the parties will first try to resolve a dispute in good faith through discussion between their nominated representatives.",
           ],
         },
         {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Logo from "@/components/ui/Logo";
+import { LogoLockup } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { Cta } from "@/components/ui/Cta";
 import { nav, services, site, strategyCallHref } from "@/lib/site";
@@ -28,7 +28,7 @@ export function Footer() {
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.25fr)_repeat(3,minmax(0,0.8fr))] lg:gap-12">
           <div className="max-w-sm">
             <Link href="/" aria-label={`${site.name} — home`} className="inline-flex rounded-lg">
-              <Logo tone="light" size="lg" showTagline />
+              <LogoLockup className="w-60" />
             </Link>
             <p className="mt-5 text-[0.9375rem] leading-relaxed text-[#9db4c8]">
               AI-powered automation systems for modern businesses. We turn repetitive manual processes into intelligent
@@ -105,17 +105,16 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href={site.facebook} target="_blank" rel="noopener noreferrer" data-track="cta_facebook" data-placement="footer" className="flex items-center gap-2.5 text-[0.9375rem] text-[#c3d5e4] transition-colors hover:text-white">
-                  <Icon name="facebook" className="h-4 w-4 shrink-0 text-[#66bfff]" accent={false} strokeWidth={1.7} />
-                  Facebook page
+                <a href={site.instagram} target="_blank" rel="noopener noreferrer" aria-label="Rockxflow on Instagram (opens in a new tab)" title="Instagram" data-track="cta_instagram" data-placement="footer" className="flex items-center gap-2.5 text-[0.9375rem] text-[#c3d5e4] transition-colors hover:text-white">
+                  <Icon name="instagram" className="h-4 w-4 shrink-0 text-[#66bfff]" accent={false} strokeWidth={1.7} />
+                  Instagram
                 </a>
               </li>
             </ul>
             <p className="mt-5 flex items-center gap-2 text-[0.8125rem] text-[#7e97ad]">
-              <Icon name="clock" className="h-3.5 w-3.5 text-[#5f89a8]" accent={false} strokeWidth={1.7} />
-              {site.hoursNote}
+              <Icon name="shield" className="h-3.5 w-3.5 text-[#5f89a8]" accent={false} strokeWidth={1.7} />
+              Every enquiry is read by whoever would build the system.
             </p>
-            <p className="mt-1 text-[0.8125rem] text-[#7e97ad]">{site.location}</p>
           </div>
         </div>
 

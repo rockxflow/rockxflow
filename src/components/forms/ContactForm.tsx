@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { contactContext } from "@/lib/contact";
-import { budgetBands, projectTypes, site } from "@/lib/site";
+import { projectTypes, site } from "@/lib/site";
 import { validateContact, type ContactField } from "@/lib/validation";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -14,11 +14,10 @@ type Values = {
   email: string;
   phone: string;
   topic: string;
-  budget: string;
   message: string;
 };
 
-const EMPTY: Values = { name: "", business: "", email: "", phone: "", topic: "", budget: "", message: "" };
+const EMPTY: Values = { name: "", business: "", email: "", phone: "", topic: "", message: "" };
 
 type Status = "idle" | "submitting" | "success" | "error" | "composed";
 
@@ -55,6 +54,8 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
   const [copied, setCopied] = useState(false);
   const mountedAt = useRef(Date.now());
   const started = useRef(false);
+  /** Guards every exit path of onSubmit so one click = one request. */
+  const inFlight = useRef(false);
   const firstField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -107,7 +108,6 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
         `Email: ${v.email}`,
         `Phone: ${v.phone || "—"}`,
         `Wants to automate: ${v.topic || "—"}`,
-        `Budget band: ${v.budget || "—"}`,
         "",
         v.message,
       ].join("\n"),
@@ -118,6 +118,10 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // One request per visitor, whatever the keyboard does: Enter, double click or a
+    // retry after a failure all land behind this guard.
+    if (inFlight.current) return;
+    inFlight.current = true;
     const res = validateContact({ ...v, kind: kindKey, _path: window.location.pathname });
     if (!res.ok) {
       setErrors(res.errors);
@@ -125,6 +129,7 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
       const firstKey = Object.keys(res.errors)[0];
       document.getElementById(`f-${firstKey}`)?.focus();
       track("contact_form_error" as never, { reason: "validation", kind: kindKey });
+      inFlight.current = false;
       return;
     }
 
@@ -135,6 +140,7 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
       window.location.href = mailtoHref;
       setStatus("composed");
       track("contact_form_compose" as never, { kind: kindKey, topic: v.topic });
+      inFlight.current = false;
       return;
     }
 
@@ -159,6 +165,8 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
         track("contact_form_submit" as never, { kind: kindKey, topic: v.topic });
         return;
       }
+      // Anything else — including a backend that answered but did not deliver — is an
+      // error state. The form keeps its contents and never claims success.
       if (data.errors) setErrors(data.errors);
       setStatus("error");
       setServerNote({ message: data.message ?? "We could not deliver that message. Please use WhatsApp or email below — your text is still here.", fallback: data.fallback });
@@ -167,6 +175,8 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
       setStatus("error");
       setServerNote({ message: "Network problem — nothing was sent. Your text is still here; WhatsApp or email will reach us instantly." });
       track("contact_form_error" as never, { reason: "network", kind: kindKey });
+    } finally {
+      inFlight.current = false;
     }
   }
 
@@ -180,7 +190,7 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
         <p className="t-body mt-2 max-w-lg">
           This copy of the site is static, so nothing was sent from the browser — your enquiry is
           pre-filled in a new message to <span className="font-medium text-[#0a0f14]">{site.email}</span>. Press
-          send there, or use WhatsApp for a reply the same day. Your text is still in the form if you go back.
+          send there, or use WhatsApp instead. Your text is still in the form if you go back.
         </p>
         <div className="mt-6 flex flex-wrap gap-2.5">
           <a href={mailtoHref} className="rx-btn rx-btn-primary rx-btn-sm">
@@ -222,8 +232,8 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
         </span>
         <h2 className="t-h3 mt-4 text-[#0a0f14]">Message sent — what happens next</h2>
         <p className="t-body mt-2 max-w-lg">
-          Thanks {v.name.split(" ")[0] || ""}. We read every enquiry ourselves. Expect a reply at{" "}
-          <span className="font-medium text-[#0a0f14]">{v.email}</span>, usually within one working day. If it is
+          Thanks {v.name.split(" ")[0] || ""}. We read every enquiry ourselves. The reply goes to{" "}
+          <span className="font-medium text-[#0a0f14]">{v.email}</span> — the same address you used on the form. If it is
           urgent, WhatsApp is the fastest route to a human.
         </p>
         <ul className="mt-5 space-y-2">
@@ -349,16 +359,14 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
         {field("business", "Business name", { placeholder: "Company or team" })}
         {field("email", "Email", { type: "email", required: true, placeholder: "you@company.com" })}
         {field("phone", "Phone / WhatsApp", { type: "tel", placeholder: "+91 …", hint: "Best number to reach you on." })}
-      </div>
-
-      <div className="mt-1 grid gap-x-4 gap-y-1 sm:grid-cols-2">
-        {field("topic", "What do you want to automate?", {
-          required: true,
-          as: "select",
-          options: projectTypes,
-          hint: "Pick the closest — we will refine it together.",
-        })}
-        {field("budget", "Estimated budget", { as: "select", options: budgetBands })}
+        <div className="sm:col-span-2">
+          {field("topic", "What do you want to automate?", {
+            required: true,
+            as: "select",
+            options: projectTypes,
+            hint: "Pick the closest — we will refine it together.",
+          })}
+        </div>
       </div>
 
       <div className="mt-1">

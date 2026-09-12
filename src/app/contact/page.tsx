@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     description:
       "Tell Rockxflow what is slowing your business down. Email, WhatsApp or send the enquiry form and we will identify where AI and automation can create the biggest impact.",
     path: "/contact",
-    keywords: ["contact AI automation agency", "book AI automation strategy call", "AI automation consultation India"],
+    keywords: ["contact AI automation agency", "book AI automation strategy call", "AI automation consultation"],
   }),
   alternates: { canonical: "/contact" },
 };
@@ -33,8 +33,8 @@ export default function ContactPage() {
         trail={trail}
         accentWords={["automation."]}
         meta={[
-          { label: "Reply time", value: "Usually within one working day" },
-          { label: "Fastest", value: "WhatsApp, during working hours" },
+          { label: "Reply", value: "By email or WhatsApp" },
+          { label: "Fastest", value: "WhatsApp" },
           { label: "First call", value: "30 minutes, no obligation" },
         ]}
       />
@@ -72,16 +72,16 @@ export default function ContactPage() {
                         href: `tel:${site.phoneRaw}`,
                         icon: "phone" as const,
                         t: "Call the studio line",
-                        d: site.hoursNote,
+                        d: "Direct line to the studio",
                         track: "cta_call",
                         ext: false,
                       },
                       {
-                        href: site.facebook,
-                        icon: "facebook" as const,
-                        t: "Facebook page",
-                        d: "Updates and explainers",
-                        track: "cta_facebook",
+                        href: site.instagram,
+                        icon: "instagram" as const,
+                        t: "Instagram",
+                        d: "Builds, before/after clips and short explainers.",
+                        track: "cta_instagram",
                         ext: true,
                       },
                     ].map((c) => (
@@ -106,7 +106,7 @@ export default function ContactPage() {
                   </ul>
                   <p className="t-small mt-4 flex items-center gap-2 border-t border-[#eef2f6] pt-3.5">
                     <Icon name="shield" className="h-3.5 w-3.5 text-[#0757a8]" accent={false} strokeWidth={1.8} />
-                    {site.location} · working with businesses across India and remotely
+                    Email, WhatsApp or the form — a person reads all three.
                   </p>
                 </div>
               </Reveal>

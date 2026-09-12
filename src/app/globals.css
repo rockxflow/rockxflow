@@ -195,6 +195,13 @@
   main .grid > * {
     min-width: 0;
   }
+  /* A page whose hero is a dark plate keeps the navbar transparent over it (see
+     [data-nav-tone] in src/app/not-found.tsx). Flip the brand ink so the name beside
+     the logo tile stays readable; the tile itself carries its own field. */
+  body:has([data-nav-tone="dark"]) {
+    --rx-brand-ink: #f5f7fa;
+    --rx-brand-sub: #8fa3b6;
+  }
   .rx-narrow {
     width: 100%;
     margin-inline: auto;

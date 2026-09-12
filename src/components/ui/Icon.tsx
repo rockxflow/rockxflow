@@ -26,7 +26,7 @@ export type IconName =
   | "close"
   | "mail"
   | "phone"
-  | "facebook"
+  | "instagram"
   | "clock"
   | "shield"
   | "spark";
@@ -127,10 +127,11 @@ const paths: Record<IconName, React.ReactNode> = {
     </>
   ),
   phone: <path d="M6 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A16.5 16.5 0 0 1 4 5.5a2 2 0 0 1 2-2Z" />,
-  facebook: (
+  instagram: (
     <>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="4" />
-      <path d="M15.2 8.2h-1.6a2 2 0 0 0-2 2v9M9.8 12.6h4.8" />
+      <rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
+      <circle cx="12" cy="12" r="4.1" />
+      <circle cx="17.05" cy="6.95" r="1.15" fill="currentColor" stroke="none" />
     </>
   ),
   clock: (

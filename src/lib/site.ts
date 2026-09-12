@@ -17,9 +17,7 @@ export const site = {
   phoneRaw: "+919211668580",
   whatsapp:
     "https://wa.me/919211668580?text=Hi%20Rockxflow%2C%20I'd%20like%20to%20discuss%20AI%20automation%20for%20my%20business.",
-  facebook: "https://www.facebook.com/people/Rockxflow/61593965152034/",
-  location: "Faridabad, Haryana, India",
-  hoursNote: "Mon–Sat, 10:00–19:00 IST",
+  instagram: "https://www.instagram.com/rockxflow/",
 } as const;
 
 export const strategyCallHref = "/contact?type=strategy-call";
@@ -751,14 +749,6 @@ export const faqs = [
     q: "How do we start?",
     a: "Book a strategy call and describe the process that annoys you most. We tell you honestly whether it is a good automation candidate, and what a first build would involve.",
   },
-] as const;
-
-export const budgetBands = [
-  "Under ₹1,00,000",
-  "₹1,00,000 – ₹3,00,000",
-  "₹3,00,000 – ₹6,00,000",
-  "₹6,00,000+",
-  "Not sure yet",
 ] as const;
 
 export const projectTypes = [

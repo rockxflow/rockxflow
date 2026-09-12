@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description:
       "Rockxflow is an AI automation agency focused on turning business processes into intelligent systems — practical AI, connected tools, human oversight and systems built to scale.",
     path: "/about",
-    keywords: ["AI automation agency about", "practical AI for business", "automation consultancy India"],
+    keywords: ["AI automation agency about", "practical AI for business", "automation consultancy"],
   }),
   alternates: { canonical: "/about" },
 };
@@ -44,7 +44,7 @@ export default function AboutPage() {
         secondary={{ href: "/services", label: "What we build" }}
         meta={[
           { label: "Category", value: site.category },
-          { label: "Based in", value: site.location },
+          { label: "How we work", value: "Remote-first, end to end" },
           { label: "Approach", value: "Map → Design → Build → Integrate → Test → Launch → Optimise" },
         ]}
       />

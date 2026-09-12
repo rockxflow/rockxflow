@@ -6,7 +6,6 @@ export type ContactField =
   | "email"
   | "phone"
   | "topic"
-  | "budget"
   | "message";
 
 export type ContactPayload = {
@@ -15,7 +14,6 @@ export type ContactPayload = {
   email: string;
   phone: string;
   topic: string;
-  budget: string;
   message: string;
   kind: string;
 };
@@ -28,7 +26,6 @@ const LIMITS: Record<ContactField, number> = {
   email: 160,
   phone: 40,
   topic: 120,
-  budget: 80,
   message: 2000,
 };
 
@@ -55,7 +52,6 @@ export function validateContact(raw: Record<string, unknown>): ValidationResult 
     email: sanitize(raw.email, LIMITS.email),
     phone: sanitize(raw.phone, LIMITS.phone),
     topic: sanitize(raw.topic, LIMITS.topic),
-    budget: sanitize(raw.budget, LIMITS.budget),
     message: sanitize(raw.message, LIMITS.message),
     kind: sanitize(raw.kind, 40) || "general",
   };

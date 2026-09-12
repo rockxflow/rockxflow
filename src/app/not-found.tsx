@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import Logo from "@/components/ui/Logo";
+import { LogoLockup } from "@/components/ui/Logo";
 import { Icon } from "@/components/ui/Icon";
 import { nav, site } from "@/lib/site";
 
@@ -22,7 +22,10 @@ export default function NotFound() {
   const breakAt = 3; // the record never reaches the CRM
 
   return (
-    <main className="relative flex min-h-dvh items-center overflow-hidden bg-[#030509] text-[color:var(--color-on-dark)]">
+    <div
+        data-nav-tone="dark"
+        className="relative flex min-h-dvh items-center overflow-hidden bg-[#030509] text-[color:var(--color-on-dark)]"
+      >
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="rx-grid absolute inset-0" />
         <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 0%, rgba(0,140,255,0.16), transparent 62%)" }} />
@@ -31,7 +34,7 @@ export default function NotFound() {
       <div className="rx-shell relative py-24">
         <div className="mx-auto max-w-2xl text-center">
           <Link href="/" aria-label={`${site.name} — home`} className="inline-flex">
-            <Logo tone="light" size="md" />
+            <LogoLockup className="w-44" />
           </Link>
 
           <p className="t-mono mt-10 uppercase tracking-[0.24em] text-[#66bfff]">Status · route not found</p>
@@ -105,6 +108,6 @@ export default function NotFound() {
           </ul>
         </nav>
       </div>
-    </main>
+    </div>
   );
 }

@@ -57,17 +57,10 @@ export function organizationJsonLd() {
     name: site.name,
     description: `${site.name} is an ${site.category.toLowerCase()} that turns repetitive business processes into intelligent AI-powered systems.`,
     url: siteUrl,
-    logo: `${siteUrl}/icons/logo-mark.svg`,
+    logo: `${siteUrl}/brand/rockxflow-logo.png`,
     email: site.email,
     telephone: site.phoneRaw,
     slogan: site.tagline,
-    areaServed: "Worldwide",
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: "Faridabad",
-      addressRegion: "Haryana",
-      addressCountry: "IN",
-    },
     knowsAbout: [
       "AI Workflow Automation",
       "AI Agents",
@@ -85,7 +78,7 @@ export function organizationJsonLd() {
       telephone: site.phoneRaw,
       availableLanguage: ["en", "hi"],
     },
-    sameAs: [site.facebook],
+    sameAs: [site.instagram, site.whatsapp],
   };
 }
 
@@ -117,8 +110,7 @@ export function servicesJsonLd() {
         serviceType: s.title,
         url: `${siteUrl}/services#${s.slug}`,
         provider: { "@id": `${siteUrl}/#organization` },
-        areaServed: "Worldwide",
-      },
+        },
     })),
   };
 }
