@@ -1,0 +1,24 @@
+# dependencies
+/node_modules
+
+# static export artefacts (regenerate with npm run build:pages)
+/.rx-api-stash
+
+# next build output
+/rockxflow-site.zip
+/.next
+/out
+/build
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# local env — never commit delivery keys
+.env
+.env.local
+.env.*.local
+
+# generated QA artefacts
+/qa
+/tools/screenshots
+npm-debug.log*
+.DS_Store

@@ -1,0 +1,61 @@
+{
+  "name": "system_core",
+  "width": 1376,
+  "height": 768,
+  "aspect": 0.5581395348837209,
+  "srcset": {
+    "webp": [
+      {
+        "w": 640,
+        "file": "/media/system_core-640.webp",
+        "kb": 30.5
+      },
+      {
+        "w": 960,
+        "file": "/media/system_core-960.webp",
+        "kb": 57.2
+      },
+      {
+        "w": 1280,
+        "file": "/media/system_core-1280.webp",
+        "kb": 84.9
+      },
+      {
+        "w": 1376,
+        "file": "/media/system_core-1376.webp",
+        "kb": 95.4
+      }
+    ],
+    "avif": [
+      {
+        "w": 640,
+        "file": "/media/system_core-640.avif",
+        "kb": 30.1
+      },
+      {
+        "w": 960,
+        "file": "/media/system_core-960.avif",
+        "kb": 53.2
+      },
+      {
+        "w": 1280,
+        "file": "/media/system_core-1280.avif",
+        "kb": 75
+      },
+      {
+        "w": 1376,
+        "file": "/media/system_core-1376.avif",
+        "kb": 83.2
+      }
+    ],
+    "jpg": [
+      {
+        "w": 1376,
+        "file": "/media/system_core-1376.jpg",
+        "kb": 115.8
+      }
+    ]
+  },
+  "placeholder": "data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAADQAwCdASoYAA0APu1Ct1apoqakGAEwHYlAF2AEN4wU/knXfTeaDxAA/vQp69Wkwq5M8UmdP+Ix5mkVlE/Mra7qrJMr8X3JPfopgZfdKZ3aEAAA",
+  "placeholderKb": 0.1
+}

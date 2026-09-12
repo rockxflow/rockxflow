@@ -1,0 +1,11 @@
+import { chromium } from "playwright";
+import { pathToFileURL } from "node:url";
+const b = await chromium.launch({ args: ["--no-sandbox","--disable-dev-shm-usage","--allow-file-access-from-files"] });
+const p = await b.newPage({ viewport:{width:1440,height:900} });
+const fails = new Set();
+p.on("requestfailed", (r) => fails.add(r.failure()?.errorText + "  " + r.url().slice(0,150)));
+p.on("response", (r) => { if (r.status() >= 400) fails.add("HTTP " + r.status() + "  " + r.url().slice(0,150)); });
+await p.goto(pathToFileURL("/home/user/rockxflow/dist/index.html").href, { waitUntil: "load" });
+await p.waitForTimeout(3000);
+console.log([...fails].slice(0,14).join("\n"));
+await b.close();

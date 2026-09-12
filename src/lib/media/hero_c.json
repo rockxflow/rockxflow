@@ -1,0 +1,61 @@
+{
+  "name": "hero_c",
+  "width": 1376,
+  "height": 768,
+  "aspect": 0.5581395348837209,
+  "srcset": {
+    "webp": [
+      {
+        "w": 640,
+        "file": "/media/hero_c-640.webp",
+        "kb": 28.7
+      },
+      {
+        "w": 960,
+        "file": "/media/hero_c-960.webp",
+        "kb": 55
+      },
+      {
+        "w": 1280,
+        "file": "/media/hero_c-1280.webp",
+        "kb": 83.4
+      },
+      {
+        "w": 1376,
+        "file": "/media/hero_c-1376.webp",
+        "kb": 95
+      }
+    ],
+    "avif": [
+      {
+        "w": 640,
+        "file": "/media/hero_c-640.avif",
+        "kb": 32.4
+      },
+      {
+        "w": 960,
+        "file": "/media/hero_c-960.avif",
+        "kb": 58.1
+      },
+      {
+        "w": 1280,
+        "file": "/media/hero_c-1280.avif",
+        "kb": 83.9
+      },
+      {
+        "w": 1376,
+        "file": "/media/hero_c-1376.avif",
+        "kb": 94.4
+      }
+    ],
+    "jpg": [
+      {
+        "w": 1376,
+        "file": "/media/hero_c-1376.jpg",
+        "kb": 112.5
+      }
+    ]
+  },
+  "placeholder": "data:image/webp;base64,UklGRnoAAABXRUJQVlA4IG4AAABQBACdASoYAA0APu1iqU2ppaOiMAgBMB2JZgCdMoRwACnd9dBuFzNTGtcAAP70Knw0tWshoUPu19+ZMRaN1FIAkRrxs+jGhc9stRKptvpgZVeRmx7EuPy0KbWemi+gcphqFv5sdR41dL8NR+AAAA==",
+  "placeholderKb": 0.13
+}
