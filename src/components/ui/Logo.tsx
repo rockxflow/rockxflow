@@ -3,20 +3,23 @@ import { cn } from "@/lib/utils";
 /**
  * ROCKXFLOW logo.
  *
- * The official asset is used verbatim — nothing here redraws, re-types or crops it:
- *   public/brand/rockxflow-logo.png   (1254×1254, its own #010205 background)
+ * The official artwork is used verbatim — nothing here redraws, re-types or crops it:
+ *   public/brand/rockxflow-mark.png   (1254×1254, the RF mark on its own black field)
+ *   public/brand/rockxflow-logo.png   (1254×1254, the full stacked lockup)
  *
- * Two presentations, both showing that same file:
- *   • LogoMark  — the lockup as a rounded tile, for light surfaces (navbar, loader),
+ * Two presentations, both just scaling those files:
+ *   • LogoMark  — the mark alone in a rounded tile, for light surfaces (navbar, loader)
  *                 where the square needs an edge of its own.
- *   • LogoLockup — the full lockup unframed, for dark surfaces (footer, 404) where the
- *                 asset's own background dissolves into the section.
+ *   • LogoLockup — the full lockup unframed, for dark surfaces (footer, 404) where its
+ *                 own background dissolves into the section.
  * `USE_CLIENT_ASSET = false` falls back to the earlier vector placeholder; nothing else
  * in the app needs to change because every placement resolves through this file.
  */
 export const USE_CLIENT_ASSET = true;
 export const CLIENT_ASSET_SRC = "/brand/rockxflow-logo.png";
-/** Exact colour of the supplied file's background, so a rounded tile has no seam. */
+export const CLIENT_MARK_SRC = "/brand/rockxflow-mark.png";
+/** Exact colour of each supplied file's field, so a rounded tile never shows a seam. */
+const MARK_BG = "#000000";
 const ASSET_BG = "#010205";
 
 /**
@@ -60,10 +63,10 @@ export function LogoMark({
     return (
       <span
         className={cn("grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[10px]", className)}
-        style={{ background: ASSET_BG }}
+        style={{ background: MARK_BG }}
       >
-        {/* the file is square and shown with object-contain: scaled, never cropped */}
-        <img src={CLIENT_ASSET_SRC} alt="" width={1254} height={1254} className="h-full w-full object-contain" decoding="async" />
+        {/* the mark file is square and shown with object-contain: scaled, never cropped */}
+        <img src={CLIENT_MARK_SRC} alt="" width={1254} height={1254} className="h-full w-full object-contain" decoding="async" />
       </span>
     );
   }

@@ -23,14 +23,21 @@ type Status = "idle" | "submitting" | "success" | "error" | "composed";
 
 /**
  * Where a submission goes. Three deployments, one component:
- *   • Next.js server   → POST /api/contact (zod-validated, rate-limited, Resend/webhook)
- *   • static export    → no endpoint: compose an email in the visitor's own client
- *   • NEXT_PUBLIC_FORM_ENDPOINT (Formspree/Getform/n8n…) → POST there instead
- * Set NEXT_PUBLIC_STATIC_EXPORT=1 at build time to opt into compose-only.
+ *   • Next.js server   → POST /api/contact (validated, rate-limited, webhook → Resend → relay)
+ *   • static export    → the key-free relay below, which forwards to the site's own inbox
+ *   • NEXT_PUBLIC_FORM_ENDPOINT → POST there instead (Formspree, Getform, an n8n webhook…)
+ * The relay is FormSubmit's public AJAX endpoint for `site.email`: no account, no API key and
+ * nothing secret in the bundle — just the address that is already printed on the site. The
+ * inbox owner taps “Activate Form” once (FormSubmit's anti-spam confirmation) and enquiries
+ * start arriving; until then it answers success:false and the form reports that honestly.
+ * Set NEXT_PUBLIC_FORM_ENDPOINT to "" to go back to compose-an-email-only behaviour.
  */
 const EXTERNAL_ENDPOINT = process.env.NEXT_PUBLIC_FORM_ENDPOINT as string | undefined;
 const STATIC_BUILD = process.env.NEXT_PUBLIC_STATIC_EXPORT === "1";
-const DELIVERY_ENDPOINT = EXTERNAL_ENDPOINT ?? (STATIC_BUILD ? "" : "/api/contact");
+const RELAY_ENDPOINT = `https://formsubmit.co/ajax/${site.email}`;
+const DELIVERY_ENDPOINT = EXTERNAL_ENDPOINT ?? (STATIC_BUILD ? RELAY_ENDPOINT : "/api/contact");
+/** The relay speaks its own small contract (`{success:"true"}`), the API route speaks `{ok:true}`. */
+const USES_RELAY = /formsubmit\.co/.test(DELIVERY_ENDPOINT);
 
 /**
  * Accessible, progressive form. Submits to /api/contact; on any failure the
@@ -144,23 +151,51 @@ export function ContactForm({ initialTopic = "", kind = "general", contextTitle 
       return;
     }
 
+    // A filled honeypot means a bot, not a person: same silent drop the API route does.
+    const honey = (document.getElementById("f-company") as HTMLInputElement | null)?.value ?? "";
+    if (honey.trim()) {
+      setStatus("success");
+      inFlight.current = false;
+      return;
+    }
+
     setStatus("submitting");
     setServerNote(null);
     try {
+      const body = USES_RELAY
+        ? {
+            name: v.name,
+            Business: v.business || "—",
+            Email: v.email,
+            Phone: v.phone || "—",
+            "Wants to automate": v.topic,
+            "Enquiry type": kindKey,
+            Message: v.message,
+            Page: window.location.pathname,
+            _subject: `Website enquiry · ${v.topic || "New"} · ${v.name}`,
+            _template: "table",
+            _captcha: "false",
+            _honey: "",
+          }
+        : { ...v, kind: kindKey, _company: "", _mountedAt: mountedAt.current, _path: window.location.pathname };
+
       const r = await fetch(DELIVERY_ENDPOINT, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...v, kind: kindKey, _company: "", _mountedAt: mountedAt.current, _path: window.location.pathname }),
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify(body),
       });
       const data = (await r.json().catch(() => ({}))) as {
         ok?: boolean;
+        success?: boolean | string;
         message?: string;
         code?: string;
         errors?: Partial<Record<ContactField, string>>;
         fallback?: { email: string; whatsapp: string };
       };
 
-      if (r.ok && data.ok) {
+      // Delivered only when the backend says so: `{ok:true}` from our route,
+      // `{success:"true"}` from the relay. Anything else — 200 included — is an error.
+      if (r.ok && (data.ok === true || data.success === true || data.success === "true")) {
         setStatus("success");
         track("contact_form_submit" as never, { kind: kindKey, topic: v.topic });
         return;

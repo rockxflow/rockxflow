@@ -73,10 +73,20 @@ POST /api/contact → 503 { ok: false, code: "not_configured",
 ```
 
 The UI then shows a "not sent yet" panel with WhatsApp / mailto / copy-to-clipboard
-actions, and `setup.missing` names the exact variable to set. Set one channel to make it live:
+actions, and `setup.missing` names the exact variable to set. **With no configuration at all**
+there is a third, key-free channel: the enquiry is forwarded to the site inbox through
+FormSubmit's public AJAX endpoint (`https://formsubmit.co/ajax/<CONTACT_TO_EMAIL ?? site.email>`).
+Nothing secret is involved — the address is already published on the site — but the inbox owner
+must click FormSubmit's one-time **"Activate Form"** email; until that single click the endpoint
+answers `success:false` and the form reports it (`code: "needs_activation"`), never a fake send.
+`CONTACT_FORMSUBMIT=off` disables the relay; `CONTACT_RELAY_ENDPOINT=…` replaces it (or set
+`NEXT_PUBLIC_FORM_ENDPOINT` to point the static build straight at your own form service).
 
-- `CONTACT_WEBHOOK_URL` → any Make / Zapier / n8n / Slack / own-service sink, **or**
-- `RESEND_API_KEY` + `CONTACT_TO_EMAIL` + `CONTACT_FROM_EMAIL` → transactional email.
+Set one channel to make it live:
+
+1. `CONTACT_WEBHOOK_URL` → any Make / Zapier / n8n / Slack / own-service sink, **or**
+2. `RESEND_API_KEY` + `CONTACT_TO_EMAIL` + `CONTACT_FROM_EMAIL` → transactional email, **or**
+3. the key-free relay above (used only when neither 1 nor 2 is configured).
 
 Both are server-only (`process.env` inside the route handler); nothing is ever inlined into the
 client bundle, and `GET /api/contact` reports only whether each variable is *present*, never its value.

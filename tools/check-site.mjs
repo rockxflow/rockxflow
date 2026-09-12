@@ -18,6 +18,11 @@ const DIST = process.argv[3] ?? "docs";
 
 const pages = ["/", "/services/", "/solutions/", "/process/", "/about/", "/contact/", "/privacy-policy/", "/terms/", "/404.html"];
 const problems = [];
+/* Section 3 deliberately breaks the relay call to prove the failure path; the browser's
+   noise about that one request must not be read as a defect. */
+let provoked = 0;
+const provokedBy = (url = "", text = "") =>
+  provoked > 0 && (/formsubmit\.co/.test(url) || /net::ERR_FAILED|Failed to load resource/i.test(text));
 const report = [];
 const browser = await chromium.launch({ args: ["--no-sandbox", "--disable-dev-shm-usage"] });
 
@@ -26,15 +31,15 @@ const open = async (route, opts = {}) => {
     viewport: opts.viewport ?? { width: 1440, height: 900 },
     reducedMotion: opts.motion === "full" ? "no-preference" : "reduce",
   });
-  page.on("console", (m) => m.type() === "error" && problems.push(`${route} console: ${m.text().slice(0, 130)}`));
+  page.on("console", (m) => m.type() === "error" && !provokedBy("", m.text()) && problems.push(`${route} console: ${m.text().slice(0, 130)}`));
   page.on("pageerror", (e) => problems.push(`${route} pageerror: ${String(e).slice(0, 130)}`));
   page.on("response", (r) => {
-    if (r.status() >= 400) problems.push(`${route} HTTP ${r.status()} → ${new URL(r.url()).pathname}`);
+    if (r.status() >= 400 && !provokedBy(r.url())) problems.push(`${route} HTTP ${r.status()} → ${new URL(r.url()).pathname}`);
   });
   page.on("requestfailed", (r) => {
     // no mail client and no phone dialler inside a headless browser: those two
     // "failures" are the static-compose path doing exactly what it should
-    if (/^(mailto|tel):/.test(r.url())) return;
+    if (/^(mailto|tel):/.test(r.url()) || provokedBy(r.url())) return;
     problems.push(`${route} request failed: ${r.url().slice(0, 120)}`);
   });
   await page.goto(ORIGIN + route, { waitUntil: "load", timeout: 45000 });
@@ -135,29 +140,78 @@ for (const route of pages) {
   await page.close();
 }
 
-/* 3 — the form: no endpoint, so it must compose and never fake success */
+/* 3 — the form: it posts for real, and only celebrates when the backend says so */
 {
+  const RELAY = "**/formsubmit.co/**";
   const page = await open("/contact/", { motion: "full" });
   await page.fill('input[name="name"]', "Aarav Sharma");
   await page.fill('input[name="email"]', "not-an-email");
-  await page.fill("textarea[name=message]", "We copy website leads into the CRM by hand every morning and follow-ups slip.");
+  await page.fill('textarea[name="message"]', "We copy website leads into the CRM by hand every morning and follow-ups slip.");
   await page.click('button[type="submit"]');
   await page.waitForTimeout(600);
   const invalid = await page.evaluate(() => document.body.innerText.includes("does not look valid"));
   if (!invalid) problems.push("contact: client-side validation did not surface the email error");
   else report.push("form validation     per-field error shown ✓");
 
-  await page.fill('input[name="email"]', "aarav@northline.in");
-  await page.selectOption('select[name="topic"]', { index: 1 });
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(1200);
-  const outcome = await page.evaluate(() => {
-    const t = document.body.innerText;
-    return { composed: /draft opened in your email app/i.test(t), faked: /message sent|thanks, we received/i.test(t), mailto: Boolean(document.querySelector('a[href^="mailto:"]')) };
+  let posted = null;
+  page.on("request", (req) => {
+    if (req.method() === "POST" && /formsubmit\.co/.test(req.url())) {
+      try {
+        posted = JSON.parse(req.postData() ?? "");
+      } catch {
+        posted = null;
+      }
+    }
   });
-  if (outcome.faked) problems.push("contact: claimed success with no delivery channel");
-  if (!outcome.composed || !outcome.mailto) problems.push(`contact: static compose state missing (${JSON.stringify(outcome)})`);
-  else report.push("static form         composes a real mailto, no fake success ✓");
+
+  const send = async () => {
+    posted = null;
+    await page.fill('input[name="name"]', "Aarav Sharma");
+    await page.fill('input[name="email"]', "aarav@northline.in");
+    await page.selectOption('select[name="topic"]', { index: 1 });
+    await page.fill('textarea[name="message"]', "We copy website leads into the CRM by hand every morning and follow-ups slip.");
+    await page.waitForTimeout(3400); // a sub-3s submit is treated as a bot by the API route
+    await page.click('button[type="submit"]');
+    await page.waitForTimeout(1700);
+    return page.evaluate(() => ({
+      success: /message sent/i.test(document.body.innerText),
+      alert: document.querySelector('[role="alert"]')?.innerText?.replace(/\s+/g, " ").slice(0, 90) ?? null,
+      mailto: Boolean(document.querySelector('a[href^="mailto:"]')),
+      busy: Boolean(document.querySelector('button[aria-busy="true"]')),
+    }));
+  };
+
+  provoked++;
+  try {
+  // (a) the relay confirms delivery → the success state is genuine
+  await page.route(RELAY, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: "true", message: "Message sent successfully" }) }));
+  const okCase = await send();
+  if (!okCase.success || okCase.busy) problems.push(`contact: a confirmed delivery did not reach the success state (${JSON.stringify(okCase)})`);
+  else if (!posted || !posted.name || !posted.Email || !posted.Message || !posted._subject)
+    problems.push(`contact: the POST body is missing enquiry fields (keys: ${posted ? Object.keys(posted).join(",") : "no POST"})`);
+  else report.push(`form → relay        real POST (${Object.keys(posted).length} fields) → success state ✓`);
+
+  // (b) the relay refuses (e.g. activation pending) → an honest error, never a thank-you
+  await page.unroute(RELAY);
+  await page.reload({ waitUntil: "load" });
+  await page.waitForTimeout(900);
+  await page.route(RELAY, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ success: "false", message: "This form needs Activation. We've sent you an email containing an 'Activate Form' link." }) }));
+  const failCase = await send();
+  if (failCase.success) problems.push("contact: claimed success when the backend refused the message");
+  else if (!failCase.alert || !failCase.mailto) problems.push(`contact: no honest failure state with fallback actions (${JSON.stringify(failCase)})`);
+  else report.push("form ← relay fails  error state + mailto/WhatsApp fallback, no fake success ✓");
+
+  // (c) no network at all → same honest treatment
+  await page.unroute(RELAY);
+  await page.reload({ waitUntil: "load" });
+  await page.waitForTimeout(900);
+  await page.route(RELAY, (r) => r.abort());
+  const netCase = await send();
+  if (netCase.success || !netCase.alert) problems.push(`contact: a blocked request was not reported (${JSON.stringify(netCase)})`);
+  else report.push("form offline        network failure surfaced with fallback ✓");
+  } finally {
+    provoked--;
+  }
   await page.close();
 }
 

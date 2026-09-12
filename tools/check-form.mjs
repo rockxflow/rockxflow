@@ -70,7 +70,9 @@ if (sinkMode) {
       console.log(`\n\x1b[36m enquiry #${n} received\x1b[0m`);
       console.log(JSON.stringify(parsed, null, 2));
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true }));
+      // answer the way each consumer expects: the inbox relay gets FormSubmit's shape
+      const relayShaped = typeof parsed === "object" && parsed && "_subject" in parsed;
+      res.end(JSON.stringify(relayShaped ? { success: "true", message: "Message sent successfully" } : { ok: true }));
     });
   })
     .once("error", (e) => {
@@ -95,9 +97,13 @@ if (sinkMode) {
     process.exit(1);
   }
   log(Boolean(health?.endpoint === "contact"), "endpoint responds", `webhook=${health.channels?.webhook} email=${health.channels?.email}`);
-  if (!health.channels?.webhook && !health.channels?.email) {
+  const relay = Boolean(health.channels?.relay);
+  if (!health.channels?.webhook && !health.channels?.email && !relay) {
     console.log(`\n  \x1b[33mNo delivery channel configured on this deployment.\x1b[0m Missing: ${(health.missing ?? []).join(", ") || "—"}`);
     console.log("  Set one of them (see .env.example) — the site deliberately refuses to fake a send until then.\n");
+  }
+  if (relay && !health.channels?.webhook && !health.channels?.email) {
+    console.log(`  \x1b[36mDelivering through the key-free relay\x1b[0m → ${health.relayTo}. First send needs the owner to tap FormSubmit's "Activate Form" email;\n  until then the endpoint answers below with success:false and the form shows that honestly.\n`);
   }
 
   const bad = await post({ ...ENQUIRY, email: "not-an-email", message: "too short", name: "A" });
@@ -119,6 +125,10 @@ if (sinkMode) {
     log(good.status === 200 && good.data?.ok === true, "real submission delivered", `mode=${good.data?.mode ?? "—"}`);
   } else if (health.channels?.webhook || health.channels?.email) {
     log(good.status === 200 && good.data?.ok === true, "valid submission accepted", `mode=${good.data?.mode ?? "—"}`);
+  } else if (relay) {
+    const delivered = good.status === 200 && good.data?.ok === true;
+    const honest = good.status === 503 && ["needs_activation", "upstream_failed"].includes(good.data?.code) && Boolean(good.data?.fallback?.email);
+    log(delivered || honest, "relay path reports either delivery or the exact blocker", delivered ? "delivered" : `code=${good.data?.code}: ${(good.data?.message ?? "").slice(0, 78)}`);
   } else {
     log(
       good.status === 503 && good.data?.code === "not_configured" && Boolean(good.data?.fallback?.email),

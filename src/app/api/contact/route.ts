@@ -12,11 +12,18 @@ import { site } from "@/lib/site";
  *      CONTACT_WEBHOOK_TOKEN                 → optional `authorization: Bearer …` header
  *   2. RESEND_API_KEY + CONTACT_TO_EMAIL    → transactional email via the Resend HTTP API
  *      + CONTACT_FROM_EMAIL                    (swap for any provider; keys stay server-side)
+ *   3. (default) the key-free inbox relay   → FormSubmit's public AJAX endpoint for
+ *      CONTACT_FORMSUBMIT=off disables it       CONTACT_TO_EMAIL ?? site.email. No account,
+ *                                              no API key, nothing secret — the address is
+ *                                              already published on the site itself. The
+ *                                              inbox owner taps FormSubmit's one-time
+ *                                              "Activate Form" link, then enquiries arrive;
+ *                                              until then it answers success:false and this
+ *                                              handler reports that as an error.
  *
- * If neither channel is complete the request is NOT reported as successful: the client
- * receives `not_configured` plus the exact variable names that are missing, and shows the
- * direct-contact fallback instead. A visitor is never told "we got it" when nothing was
- * delivered. Enquiries are never persisted here — no database, no PII at rest.
+ * If every channel fails or is unavailable the request is NOT reported as successful: the
+ * client gets an honest `code` plus the direct-contact fallback and shows it instead of a
+ * thank-you screen. Enquiries are never persisted here — no database, no PII at rest.
  *
  * Everything the handler logs is redacted to a reason string, so an API key can never leak
  * into a response body.
@@ -45,6 +52,8 @@ function channels() {
     email: emailMissing.length === 0,
     emailMissing,
     webhookToken: Boolean(process.env.CONTACT_WEBHOOK_TOKEN),
+    relay: process.env.CONTACT_FORMSUBMIT !== "off",
+    relayTo: relayInbox(),
   };
 }
 
@@ -110,6 +119,53 @@ async function sendToWebhook(payload: Record<string, string>) {
   if (ct.includes("json")) {
     const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
     if (data && data.ok === false) throw new Error("upstream rejected the enquiry");
+  }
+  return res.status;
+}
+
+/** Where the relay should deliver: the configured inbox, else the address on the site. */
+function relayInbox() {
+  return (process.env.CONTACT_TO_EMAIL ?? site.email).split(",")[0]!.trim();
+}
+
+/** Channel 3: forward to the inbox through FormSubmit's key-free AJAX endpoint. */
+async function sendViaRelay(payload: Record<string, string>) {
+  const relay = process.env.CONTACT_RELAY_ENDPOINT ?? `https://formsubmit.co/ajax/${relayInbox()}`;
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rockxflow.com";
+  const res = await withTimeout(
+    fetch(relay, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+        // the endpoint rejects file:// and localhost callers, so identify the site
+        origin,
+        referer: `${origin}/contact`,
+      },
+      body: JSON.stringify({
+        name: payload.name,
+        Business: payload.business || "—",
+        Email: payload.email,
+        Phone: payload.phone || "—",
+        "Wants to automate": payload.topic,
+        "Enquiry type": payload.kind,
+        Message: payload.message,
+        Page: `${origin}${payload.page}`,
+        Received: payload.submittedAt,
+        _subject: `Website enquiry · ${payload.topic || "New"} · ${payload.name}`,
+        _template: "table",
+        _captcha: "false",
+        _honey: "",
+      }),
+    }),
+    9000
+  );
+  const data = (await res.json().catch(() => null)) as { success?: boolean | string; message?: string } | null;
+  const delivered = res.ok && (data?.success === true || data?.success === "true");
+  if (!delivered) {
+    const err = new Error(data?.message?.slice(0, 200) || `relay ${res.status}`) as Error & { pending?: boolean };
+    err.pending = /activation/i.test(data?.message ?? "");
+    throw err;
   }
   return res.status;
 }
@@ -219,11 +275,30 @@ export async function POST(req: Request) {
     }
   }
 
-  // No delivery channel configured — say exactly what is missing. Never a fake success.
-  const needs = [
-    "CONTACT_WEBHOOK_URL",
-    ...ch.emailMissing.map((k) => k),
-  ];
+  if (ch.relay) {
+    try {
+      await sendViaRelay(payload);
+      return NextResponse.json({ ok: true, mode: "relay" });
+    } catch (err) {
+      const e = err as Error & { pending?: boolean };
+      console.error("[contact] relay delivery failed:", e.message);
+      return NextResponse.json(
+        {
+          ok: false,
+          code: e.pending ? "needs_activation" : "upstream_failed",
+          message: e.pending
+            ? `We are one click away from receiving enquiries: open ${ch.relayTo}, tap the “Activate Form” link FormSubmit sent, and this form will deliver. Until then, WhatsApp or email below reach us directly.`
+            : `The mail relay could not accept the message (${e.message}). Please use WhatsApp or email below — your text is still here.`,
+          setup: { channels: { webhook: ch.webhook, email: ch.email, relay: true }, relayTo: ch.relayTo, missing: [] },
+          fallback: { email: site.email, whatsapp: site.whatsapp, subject: `Website enquiry · ${payload.topic || "New"}` },
+        },
+        { status: 503 }
+      );
+    }
+  }
+
+  // Nothing usable — say exactly what is missing. Never a fake success.
+  const needs = ["CONTACT_WEBHOOK_URL", ...ch.emailMissing.map((k) => k)];
   return NextResponse.json(
     {
       ok: false,
@@ -246,8 +321,9 @@ export function GET() {
   return NextResponse.json({
     endpoint: "contact",
     methods: ["POST"],
-    channels: { webhook: ch.webhook, email: ch.email },
-    missing: ch.webhook ? [] : ["CONTACT_WEBHOOK_URL", ...ch.emailMissing],
+    channels: { webhook: ch.webhook, email: ch.email, relay: ch.relay },
+    relayTo: ch.relay ? ch.relayTo : null,
+    missing: ch.webhook || ch.email || ch.relay ? [] : ["CONTACT_WEBHOOK_URL", ...ch.emailMissing],
     limits: { perIpPer10Minutes: MAX_PER_WINDOW, messageChars: 2000 },
   });
 }

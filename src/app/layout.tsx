@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { IntroLoader } from "@/components/layout/IntroLoader";
 import { Cursor } from "@/components/layout/Cursor";
 import { AnalyticsBridge } from "@/components/layout/AnalyticsBridge";
+import { ExternalLinkBridge } from "@/components/layout/ExternalLinkBridge";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { BrandDefs } from "@/components/ui/Logo";
 import { buildMetadata, organizationJsonLd, siteUrl, websiteJsonLd } from "@/lib/seo";
@@ -73,6 +74,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
         <Footer />
         <AnalyticsBridge />
+        {/* external links must open on a plain click even inside a popup-blocking embed */}
+        <ExternalLinkBridge />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify([organizationJsonLd(), websiteJsonLd()]) }}

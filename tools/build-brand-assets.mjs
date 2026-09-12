@@ -1,8 +1,8 @@
 /**
  * Builds brand deliverables: Open Graph social preview, favicons, PWA icons.
  *
- * Every icon and the OG badge are produced from the client's official logo file
- * (`public/brand/rockxflow-logo.png`) by scaling only — the artwork itself is never
+ * Every icon and the OG badge are produced from the client's official logo **mark**
+ * (`public/brand/rockxflow-mark.png`) by scaling only — the artwork itself is never
  * redrawn, cropped or recoloured. `contain` into a square canvas is a pure resize,
  * because the supplied file is already square.
  * Run: `node tools/build-brand-assets.mjs`
@@ -14,9 +14,9 @@ import sharp from "sharp";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const OUT_MEDIA = path.join(ROOT, "public", "media");
 const OUT_ICONS = path.join(ROOT, "public", "icons");
-const LOGO = path.join(ROOT, "public", "brand", "rockxflow-logo.png");
-/** Background of the supplied file — reused so a scaled copy never shows a seam. */
-const LOGO_BG = "#010205";
+const LOGO = path.join(ROOT, "public", "brand", "rockxflow-mark.png");
+/** Background of the supplied mark file — reused so a scaled copy never shows a seam. */
+const LOGO_BG = "#000000";
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -126,7 +126,7 @@ async function main() {
   await logoTile(512).then((buf) => writeFile(path.join(OUT_ICONS, "icon-512.png"), buf));
   // Maskable: flat tile, artwork already sits inside the 80% safe zone of the source.
   await logoTile(512).then((buf) => writeFile(path.join(OUT_ICONS, "icon-512-maskable.png"), buf));
-  console.log("public/icons: favicon-{16,32,180,192,512}.png, apple-touch-icon.png, icon-512{,-maskable}.png — all scaled from public/brand/rockxflow-logo.png");
+  console.log("public/icons: favicon-{16,32,180,192,512}.png, apple-touch-icon.png, icon-512{,-maskable}.png — all scaled from public/brand/rockxflow-mark.png");
 }
 
 main().catch((e) => {
