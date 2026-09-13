@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://rockxflow.com
+Sitemap: https://rockxflow.com/sitemap.xml
